@@ -8,7 +8,10 @@ Before you begin, ensure you have the following installed:
 
 - **Node.js** 18+ and npm
 - **PostgreSQL** 14+
-- **Anthropic API Key** (for AI features)
+- **AI Provider API Key** - Choose one:
+  - **OpenAI API Key** (recommended)
+  - **Anthropic API Key** (Claude)
+  - **Google Gemini API Key**
 
 ## Step 1: Clone the Repository
 
@@ -44,8 +47,14 @@ DATABASE_URL="postgresql://username:password@localhost:5432/api_flow_tester?sche
 PORT=3000
 NODE_ENV=development
 
-# AI Agent
+# AI Agent Configuration
+# Choose which AI provider to use: 'anthropic', 'openai', or 'gemini'
+AI_PROVIDER=openai
+
+# API Keys (only the one for your chosen provider is required)
 ANTHROPIC_API_KEY=your_anthropic_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+GEMINI_API_KEY=your_gemini_api_key_here
 
 # Security
 JWT_SECRET=your_jwt_secret_here
@@ -53,6 +62,39 @@ JWT_SECRET=your_jwt_secret_here
 # CORS
 CORS_ORIGIN=http://localhost:5173
 ```
+
+### Configure AI Provider
+
+The application supports three AI providers for intelligent flow generation. Choose one and configure accordingly:
+
+#### Option 1: OpenAI (Recommended)
+
+1. Get your API key from [OpenAI Platform](https://platform.openai.com/api-keys)
+2. Set in `.env`:
+```env
+AI_PROVIDER=openai
+OPENAI_API_KEY=sk-your-openai-api-key-here
+```
+
+#### Option 2: Anthropic Claude
+
+1. Get your API key from [Anthropic Console](https://console.anthropic.com/)
+2. Set in `.env`:
+```env
+AI_PROVIDER=anthropic
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key-here
+```
+
+#### Option 3: Google Gemini
+
+1. Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Set in `.env`:
+```env
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your-gemini-api-key-here
+```
+
+**Note:** You only need to set the API key for the provider you choose. The application will automatically use the configured provider.
 
 ### Set Up the Database
 

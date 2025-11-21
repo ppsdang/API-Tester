@@ -8,7 +8,7 @@ A comprehensive web application for testing APIs and API flows with an intellige
 - **Flow Builder**: Create complex API test flows with variable extraction and reuse
 - **Execution Engine**: Execute flows and validate results with detailed logging
 - **Environment Management**: Support for multiple environments (Dev, QA, Staging, Prod)
-- **AI Assistant**: Intelligent agent powered by Claude AI that helps design, validate, and analyze flows
+- **AI Assistant**: Intelligent agent powered by AI (OpenAI, Anthropic Claude, or Google Gemini) that helps design, validate, and analyze flows
 
 ## Project Structure
 
@@ -26,7 +26,7 @@ A comprehensive web application for testing APIs and API flows with an intellige
 - PostgreSQL database with Prisma ORM
 - Swagger Parser for OpenAPI definitions
 - Postman Collection SDK
-- Anthropic Claude API
+- Multiple AI Provider Support (OpenAI GPT, Anthropic Claude, Google Gemini)
 
 ### Frontend
 - React 18 with TypeScript
@@ -40,7 +40,7 @@ A comprehensive web application for testing APIs and API flows with an intellige
 ### Prerequisites
 - Node.js 18+ and npm
 - PostgreSQL 14+
-- Anthropic API key (for AI features)
+- AI Provider API key (choose one: OpenAI, Anthropic, or Gemini)
 
 ### Installation
 
@@ -55,7 +55,9 @@ cd API-Tester
 cd backend
 npm install
 cp .env.example .env
-# Edit .env with your database and API credentials
+# Edit .env with your database and AI provider credentials
+# Set AI_PROVIDER to 'openai', 'anthropic', or 'gemini'
+# Set the corresponding API key
 npx prisma migrate dev
 npm run dev
 ```

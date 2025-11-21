@@ -1,17 +1,61 @@
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIFlowRequest, AIFlowResponse, ApiEndpoint, FlowStepConfig } from '../types';
+
+type AIProvider = 'anthropic' | 'openai' | 'gemini';
 
 /**
  * AI Agent for flow generation and analysis
- * Powered by Claude API
+ * Supports multiple AI providers: Anthropic Claude, OpenAI GPT, Google Gemini
  */
 export class AIAgent {
-  private client: Anthropic;
+  private provider: AIProvider;
+  private anthropicClient?: Anthropic;
+  private openaiClient?: OpenAI;
+  private geminiClient?: GoogleGenerativeAI;
 
-  constructor(apiKey?: string) {
-    this.client = new Anthropic({
-      apiKey: apiKey || process.env.ANTHROPIC_API_KEY,
-    });
+  constructor() {
+    // Determine which provider to use based on environment
+    this.provider = (process.env.AI_PROVIDER as AIProvider) || 'openai';
+
+    // Initialize the appropriate client
+    this.initializeClient();
+  }
+
+  private initializeClient() {
+    switch (this.provider) {
+      case 'anthropic':
+        if (!process.env.ANTHROPIC_API_KEY) {
+          throw new Error('ANTHROPIC_API_KEY is required when using Anthropic provider');
+        }
+        this.anthropicClient = new Anthropic({
+          apiKey: process.env.ANTHROPIC_API_KEY,
+        });
+        console.log('✓ AI Agent initialized with Anthropic Claude');
+        break;
+
+      case 'openai':
+        if (!process.env.OPENAI_API_KEY) {
+          throw new Error('OPENAI_API_KEY is required when using OpenAI provider');
+        }
+        this.openaiClient = new OpenAI({
+          apiKey: process.env.OPENAI_API_KEY,
+        });
+        console.log('✓ AI Agent initialized with OpenAI GPT');
+        break;
+
+      case 'gemini':
+        if (!process.env.GEMINI_API_KEY) {
+          throw new Error('GEMINI_API_KEY is required when using Gemini provider');
+        }
+        this.geminiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+        console.log('✓ AI Agent initialized with Google Gemini');
+        break;
+
+      default:
+        throw new Error(`Unsupported AI provider: ${this.provider}`);
+    }
   }
 
   /**
@@ -25,24 +69,8 @@ export class AIAgent {
     const userPrompt = this.buildFlowGenerationPrompt(request);
 
     try {
-      const response = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 4096,
-        system: systemPrompt,
-        messages: [
-          {
-            role: 'user',
-            content: userPrompt,
-          },
-        ],
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        return this.parseFlowResponse(content.text);
-      }
-
-      throw new Error('Unexpected response format from AI');
+      const response = await this.callAI(systemPrompt, userPrompt);
+      return this.parseFlowResponse(response);
     } catch (error: any) {
       throw new Error(`AI flow generation failed: ${error.message}`);
     }
@@ -77,23 +105,7 @@ Provide a clear, actionable response.
 `;
 
     try {
-      const response = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2048,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        return content.text;
-      }
-
-      throw new Error('Unexpected response format from AI');
+      return await this.callAI('You are an expert API testing assistant.', prompt);
     } catch (error: any) {
       throw new Error(`AI failure analysis failed: ${error.message}`);
     }
@@ -136,26 +148,12 @@ Return ONLY the JSON array, no additional text.
 `;
 
     try {
-      const response = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 2048,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        // Extract JSON from response
-        const jsonMatch = content.text.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
+      const response = await this.callAI('You are an expert API testing assistant.', prompt);
+      // Extract JSON from response
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
       }
-
       return [];
     } catch (error: any) {
       console.error('AI assertion suggestion failed:', error);
@@ -184,31 +182,115 @@ Return ONLY the JSON test data, no additional text.
 `;
 
     try {
-      const response = await this.client.messages.create({
-        model: 'claude-3-5-sonnet-20241022',
-        max_tokens: 1024,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      });
-
-      const content = response.content[0];
-      if (content.type === 'text') {
-        // Extract JSON from response
-        const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]);
-        }
+      const response = await this.callAI('You are an expert API testing assistant.', prompt);
+      // Extract JSON from response
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
       }
-
       return null;
     } catch (error: any) {
       console.error('AI test data generation failed:', error);
       return null;
     }
+  }
+
+  /**
+   * Call the appropriate AI provider
+   */
+  private async callAI(systemPrompt: string, userPrompt: string): Promise<string> {
+    switch (this.provider) {
+      case 'anthropic':
+        return this.callAnthropic(systemPrompt, userPrompt);
+      case 'openai':
+        return this.callOpenAI(systemPrompt, userPrompt);
+      case 'gemini':
+        return this.callGemini(systemPrompt, userPrompt);
+      default:
+        throw new Error(`Unsupported AI provider: ${this.provider}`);
+    }
+  }
+
+  /**
+   * Call Anthropic Claude API
+   */
+  private async callAnthropic(systemPrompt: string, userPrompt: string): Promise<string> {
+    if (!this.anthropicClient) {
+      throw new Error('Anthropic client not initialized');
+    }
+
+    const response = await this.anthropicClient.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: userPrompt,
+        },
+      ],
+    });
+
+    const content = response.content[0];
+    if (content.type === 'text') {
+      return content.text;
+    }
+
+    throw new Error('Unexpected response format from Anthropic');
+  }
+
+  /**
+   * Call OpenAI GPT API
+   */
+  private async callOpenAI(systemPrompt: string, userPrompt: string): Promise<string> {
+    if (!this.openaiClient) {
+      throw new Error('OpenAI client not initialized');
+    }
+
+    const response = await this.openaiClient.chat.completions.create({
+      model: 'gpt-4-turbo-preview',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content: userPrompt,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 4096,
+    });
+
+    const content = response.choices[0]?.message?.content;
+    if (content) {
+      return content;
+    }
+
+    throw new Error('Unexpected response format from OpenAI');
+  }
+
+  /**
+   * Call Google Gemini API
+   */
+  private async callGemini(systemPrompt: string, userPrompt: string): Promise<string> {
+    if (!this.geminiClient) {
+      throw new Error('Gemini client not initialized');
+    }
+
+    const model = this.geminiClient.getGenerativeModel({ model: 'gemini-pro' });
+
+    const prompt = `${systemPrompt}\n\n${userPrompt}`;
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    if (text) {
+      return text;
+    }
+
+    throw new Error('Unexpected response format from Gemini');
   }
 
   /**
