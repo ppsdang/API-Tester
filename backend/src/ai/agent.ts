@@ -7,7 +7,10 @@ type AIProvider = 'anthropic' | 'openai' | 'gemini';
 
 /**
  * AI Agent for flow generation and analysis
- * Supports multiple AI providers: Anthropic Claude, OpenAI GPT, Google Gemini
+ * Supports multiple AI providers with latest models:
+ * - OpenAI GPT-5
+ * - Anthropic Claude Sonnet 4.5
+ * - Google Gemini 3 Pro
  */
 export class AIAgent {
   private provider: AIProvider;
@@ -220,7 +223,7 @@ Return ONLY the JSON test data, no additional text.
     }
 
     const response = await this.anthropicClient.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
+      model: 'claude-sonnet-4.5-20250514',
       max_tokens: 4096,
       system: systemPrompt,
       messages: [
@@ -248,7 +251,7 @@ Return ONLY the JSON test data, no additional text.
     }
 
     const response = await this.openaiClient.chat.completions.create({
-      model: 'gpt-4-turbo-preview',
+      model: 'gpt-5',
       messages: [
         {
           role: 'system',
@@ -279,7 +282,7 @@ Return ONLY the JSON test data, no additional text.
       throw new Error('Gemini client not initialized');
     }
 
-    const model = this.geminiClient.getGenerativeModel({ model: 'gemini-pro' });
+    const model = this.geminiClient.getGenerativeModel({ model: 'gemini-3-pro' });
 
     const prompt = `${systemPrompt}\n\n${userPrompt}`;
     const result = await model.generateContent(prompt);

@@ -26,7 +26,7 @@ A comprehensive web application for testing APIs and API flows with an intellige
 - PostgreSQL database with Prisma ORM
 - Swagger Parser for OpenAPI definitions
 - Postman Collection SDK
-- Multiple AI Provider Support (OpenAI GPT, Anthropic Claude, Google Gemini)
+- Multiple AI Provider Support (OpenAI GPT-5, Anthropic Claude Sonnet 4.5, Google Gemini 3 Pro)
 
 ### Frontend
 - React 18 with TypeScript

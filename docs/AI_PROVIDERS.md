@@ -6,7 +6,7 @@ The API Flow Testing Application supports multiple AI providers for intelligent 
 
 ### 1. OpenAI (Recommended)
 
-**Model Used:** GPT-4 Turbo
+**Model Used:** GPT-5
 
 **Pros:**
 - Fast response times
@@ -28,13 +28,13 @@ AI_PROVIDER=openai
 OPENAI_API_KEY=sk-proj-your-key-here
 ```
 
-3. **Cost:** Pay-per-use pricing. GPT-4 Turbo costs approximately $0.01 per 1K tokens (input) and $0.03 per 1K tokens (output)
+3. **Cost:** Pay-per-use pricing. GPT-5 costs approximately $0.01 per 1K tokens (input) and $0.03 per 1K tokens (output)
 
 ---
 
 ### 2. Anthropic Claude
 
-**Model Used:** Claude 3.5 Sonnet
+**Model Used:** Claude Sonnet 4.5
 
 **Pros:**
 - Excellent reasoning capabilities
@@ -56,13 +56,13 @@ AI_PROVIDER=anthropic
 ANTHROPIC_API_KEY=sk-ant-api03-your-key-here
 ```
 
-3. **Cost:** Pay-per-use pricing. Claude 3.5 Sonnet costs approximately $0.003 per 1K tokens (input) and $0.015 per 1K tokens (output)
+3. **Cost:** Pay-per-use pricing. Claude Sonnet 4.5 costs approximately $0.003 per 1K tokens (input) and $0.015 per 1K tokens (output)
 
 ---
 
 ### 3. Google Gemini
 
-**Model Used:** Gemini Pro
+**Model Used:** Gemini 3 Pro
 
 **Pros:**
 - Good performance
