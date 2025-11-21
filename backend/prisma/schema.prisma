@@ -1,0 +1,229 @@
+// Prisma schema for API Flow Testing Application
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  apiCollections ApiCollection[]
+  apis           Api[]
+  flows          Flow[]
+  executions     Execution[]
+  environments   Environment[]
+}
+
+// API Collection (from Swagger/Postman import)
+model ApiCollection {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  source      String   // 'swagger', 'postman', 'manual'
+  sourceUrl   String?  // Original URL if imported
+  rawData     Json?    // Store original swagger/postman JSON
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  apis Api[]
+
+  @@index([userId])
+}
+
+// Individual API endpoint
+model Api {
+  id              String   @id @default(uuid())
+  name            String
+  description     String?
+  method          String   // GET, POST, PUT, DELETE, etc.
+  path            String   // URL path or full URL
+  headers         Json?    // Default headers
+  queryParams     Json?    // Query parameter schema
+  pathParams      Json?    // Path parameter schema
+  requestBody     Json?    // Request body schema/example
+  responseSchema  Json?    // Expected response schema
+  exampleRequest  Json?    // Example request
+  exampleResponse Json?    // Example response
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  collectionId    String?
+  collection      ApiCollection? @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  flowSteps FlowStep[]
+
+  @@index([userId])
+  @@index([collectionId])
+}
+
+// Test Flow definition
+model Flow {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  steps      FlowStep[]
+  executions Execution[]
+
+  @@index([userId])
+}
+
+// Individual step in a flow
+model FlowStep {
+  id          String   @id @default(uuid())
+  stepOrder   Int      // Order of execution
+  name        String?  // Optional name for the step
+  description String?
+
+  // API configuration
+  apiId    String?
+  api      Api?    @relation(fields: [apiId], references: [id], onDelete: SetNull)
+
+  // Override API defaults for this step
+  method       String?  // Override method if needed
+  url          String?  // Override URL if needed
+  headers      Json?    // Step-specific headers
+  queryParams  Json?    // Step-specific query params
+  pathParams   Json?    // Step-specific path params
+  requestBody  Json?    // Step-specific request body
+
+  // Variable extraction
+  extractVariables Json?  // Rules to extract variables from response
+
+  // Assertions
+  assertions Json?  // Validation rules for this step
+
+  // Conditional execution
+  condition String?  // Expression to determine if step should run
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  flowId String
+  flow   Flow   @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  executionLogs ExecutionLog[]
+
+  @@index([flowId])
+}
+
+// Flow execution record
+model Execution {
+  id             String   @id @default(uuid())
+  status         String   // 'running', 'passed', 'failed', 'error'
+  startedAt      DateTime @default(now())
+  completedAt    DateTime?
+  totalSteps     Int      @default(0)
+  passedSteps    Int      @default(0)
+  failedSteps    Int      @default(0)
+  errorMessage   String?
+
+  environmentId String?
+  environment   Environment? @relation(fields: [environmentId], references: [id], onDelete: SetNull)
+
+  flowId String
+  flow   Flow   @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  logs      ExecutionLog[]
+  variables ExecutionVariable[]
+
+  @@index([flowId])
+  @@index([userId])
+  @@index([startedAt])
+}
+
+// Log for each step execution
+model ExecutionLog {
+  id          String   @id @default(uuid())
+  stepOrder   Int
+  stepName    String?
+  status      String   // 'passed', 'failed', 'error', 'skipped'
+
+  // Request details
+  requestMethod  String?
+  requestUrl     String?
+  requestHeaders Json?
+  requestBody    Json?
+
+  // Response details
+  responseStatus  Int?
+  responseHeaders Json?
+  responseBody    Json?
+  responseTime    Int?     // Time in milliseconds
+
+  // Assertion results
+  assertionResults Json?
+
+  // Error details
+  errorMessage String?
+  errorStack   String?
+
+  executedAt DateTime @default(now())
+
+  executionId String
+  execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  stepId String?
+  step   FlowStep? @relation(fields: [stepId], references: [id], onDelete: SetNull)
+
+  @@index([executionId])
+}
+
+// Variables extracted during execution
+model ExecutionVariable {
+  id    String @id @default(uuid())
+  name  String
+  value String
+
+  executionId String
+  execution   Execution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([executionId])
+  @@unique([executionId, name])
+}
+
+// Environment configuration
+model Environment {
+  id          String   @id @default(uuid())
+  name        String   // e.g., 'Development', 'QA', 'Staging', 'Production'
+  description String?
+  baseUrl     String?  // Base URL for this environment
+  variables   Json?    // Environment-specific variables
+  headers     Json?    // Common headers for this environment
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  executions Execution[]
+
+  @@index([userId])
+}
